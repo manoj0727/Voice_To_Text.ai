@@ -75,6 +75,9 @@ export function useVoiceToText({ apiKey, onTranscription, onAudioLevel }: UseVoi
   // Handle connection status changes
   const handleStatusChange = useCallback((status: ConnectionStatus) => {
     setConnectionStatus(status);
+    if (status === 'error' || status === 'disconnected') {
+      isConnectedRef.current = false;
+    }
     if (status === 'error') {
       setIsRecording(false);
       setIsPushToTalkActive(false);
@@ -115,7 +118,12 @@ export function useVoiceToText({ apiKey, onTranscription, onAudioLevel }: UseVoi
 
   // Pre-connect to Deepgram when API key is available
   const preConnect = useCallback(async () => {
-    if (!apiKey || !deepgramRef.current || isConnectedRef.current) return;
+    if (!apiKey || !deepgramRef.current) return;
+    // Check actual connection state, not just the ref
+    if (deepgramRef.current.isConnected()) {
+      isConnectedRef.current = true;
+      return;
+    }
 
     try {
       await deepgramRef.current.connect(
@@ -126,6 +134,7 @@ export function useVoiceToText({ apiKey, onTranscription, onAudioLevel }: UseVoi
       isConnectedRef.current = true;
     } catch (err) {
       console.error('Pre-connect failed:', err);
+      isConnectedRef.current = false;
     }
   }, [apiKey, handleTranscription, handleStatusChange, handleError]);
 
@@ -157,17 +166,26 @@ export function useVoiceToText({ apiKey, onTranscription, onAudioLevel }: UseVoi
         if (!granted) return;
       }
 
-      // Connect to Deepgram if not already connected
-      if (deepgramRef.current && !isConnectedRef.current) {
-        await deepgramRef.current.connect(
-          handleTranscription,
-          handleStatusChange,
-          handleError
-        );
-        isConnectedRef.current = true;
+      // Always ensure connection is ready before recording
+      if (deepgramRef.current) {
+        if (!deepgramRef.current.isConnected()) {
+          console.log('Connecting to Deepgram...');
+          await deepgramRef.current.connect(
+            handleTranscription,
+            handleStatusChange,
+            handleError
+          );
+          isConnectedRef.current = true;
+          console.log('Connected to Deepgram');
+        } else {
+          console.log('Already connected to Deepgram');
+        }
+      } else {
+        throw new Error('Deepgram service not initialized');
       }
 
-      // Start audio capture immediately
+      // Start audio capture after connection is confirmed
+      console.log('Starting audio capture...');
       await audioCaptureService.startCapture(
         (audioData) => {
           deepgramRef.current?.sendAudio(audioData);
@@ -176,7 +194,9 @@ export function useVoiceToText({ apiKey, onTranscription, onAudioLevel }: UseVoi
       );
 
       setIsRecording(true);
+      console.log('Recording started');
     } catch (err) {
+      console.error('Failed to start recording:', err);
       handleError(err instanceof Error ? err : new Error('Failed to start recording'));
     }
   }, [apiKey, isRecording, hasPermission, requestPermission, handleTranscription, handleStatusChange, handleError, onAudioLevel]);

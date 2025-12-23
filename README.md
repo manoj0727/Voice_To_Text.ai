@@ -2,6 +2,10 @@
 
 A high-performance, real-time voice-to-text desktop application built with **Tauri 2.0**, **React 19**, and **Deepgram AI**. Inspired by [Wispr Flow](https://www.wispr.ai/), this app delivers near-instant speech transcription with visual audio feedback.
 
+## Demo
+
+🎬 [Watch Demo Video](https://drive.google.com/file/d/1X09-gaw3f-mGunemOWd6VBUXWsAxBf50/view?usp=drive_link)
+
 ## Features
 
 - **Push-to-Talk Interface**: Hold button or spacebar to record, release to stop

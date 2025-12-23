@@ -54,6 +54,17 @@ export class DeepgramService {
       return;
     }
 
+    // Clean up any existing connection before creating new one
+    if (this.connection) {
+      this.stopKeepAlive();
+      try {
+        this.connection.requestClose();
+      } catch {
+        // Ignore close errors
+      }
+      this.connection = null;
+    }
+
     onStatusChange('connecting');
 
     return new Promise((resolve, reject) => {
@@ -82,6 +93,7 @@ export class DeepgramService {
         this.connection.on(LiveTranscriptionEvents.Transcript, (data) => {
           const transcript = data.channel?.alternatives?.[0]?.transcript;
           if (transcript) {
+            console.log('Transcript received:', transcript, 'isFinal:', data.is_final || data.speech_final);
             this.onTranscription?.({
               text: transcript,
               isFinal: data.is_final || data.speech_final || false,
@@ -93,6 +105,7 @@ export class DeepgramService {
 
         this.connection.on(LiveTranscriptionEvents.Error, (error) => {
           console.error('Deepgram error:', error);
+          this.connection = null;
           this.onError?.(new Error(error.message || 'Deepgram connection error'));
           this.onStatusChange?.('error');
           reject(error);
@@ -101,10 +114,12 @@ export class DeepgramService {
         this.connection.on(LiveTranscriptionEvents.Close, () => {
           console.log('Deepgram WebSocket closed');
           this.stopKeepAlive();
+          this.connection = null;
           this.onStatusChange?.('disconnected');
         });
 
       } catch (error) {
+        this.connection = null;
         onError(error instanceof Error ? error : new Error('Failed to connect to Deepgram'));
         onStatusChange('error');
         reject(error);
@@ -116,11 +131,31 @@ export class DeepgramService {
    * Send audio data to Deepgram
    */
   sendAudio(audioData: Blob): void {
-    if (this.connection) {
+    if (this.connection && this.isConnectionOpen()) {
       // Use sync-like pattern for faster sending
       audioData.arrayBuffer().then(buffer => {
-        this.connection?.send(buffer);
+        if (this.connection && this.isConnectionOpen()) {
+          this.connection.send(buffer);
+        } else {
+          console.warn('Connection closed while sending audio');
+        }
       });
+    } else {
+      console.warn('Cannot send audio: connection not open');
+    }
+  }
+
+  /**
+   * Check if WebSocket connection is actually open
+   */
+  private isConnectionOpen(): boolean {
+    if (!this.connection) return false;
+    try {
+      const state = this.connection.getReadyState?.();
+      // WebSocket.OPEN = 1, if getReadyState not available, assume open if connection exists
+      return state === undefined || state === 1;
+    } catch {
+      return true; // If we can't check, assume it's open and let it fail naturally
     }
   }
 
@@ -163,7 +198,7 @@ export class DeepgramService {
    * Check if connected to Deepgram
    */
   isConnected(): boolean {
-    return this.connection !== null;
+    return this.connection !== null && this.isConnectionOpen();
   }
 }
 
