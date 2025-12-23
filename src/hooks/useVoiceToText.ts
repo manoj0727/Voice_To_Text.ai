@@ -41,6 +41,7 @@ export function useVoiceToText({ apiKey, onTranscription, onAudioLevel }: UseVoi
   const [hasPermission, setHasPermission] = useState<boolean | null>(null);
 
   const deepgramRef = useRef<DeepgramService | null>(null);
+  const isConnectedRef = useRef(false);
 
   // Initialize Deepgram service
   useEffect(() => {
@@ -49,6 +50,7 @@ export function useVoiceToText({ apiKey, onTranscription, onAudioLevel }: UseVoi
     }
     return () => {
       deepgramRef.current?.disconnect();
+      isConnectedRef.current = false;
     };
   }, [apiKey]);
 
@@ -111,6 +113,29 @@ export function useVoiceToText({ apiKey, onTranscription, onAudioLevel }: UseVoi
     }
   }, []);
 
+  // Pre-connect to Deepgram when API key is available
+  const preConnect = useCallback(async () => {
+    if (!apiKey || !deepgramRef.current || isConnectedRef.current) return;
+
+    try {
+      await deepgramRef.current.connect(
+        handleTranscription,
+        handleStatusChange,
+        handleError
+      );
+      isConnectedRef.current = true;
+    } catch (err) {
+      console.error('Pre-connect failed:', err);
+    }
+  }, [apiKey, handleTranscription, handleStatusChange, handleError]);
+
+  // Pre-connect when API key becomes available
+  useEffect(() => {
+    if (apiKey && hasPermission !== false) {
+      preConnect();
+    }
+  }, [apiKey, hasPermission, preConnect]);
+
   // Start recording (continuous mode)
   const startRecording = useCallback(async () => {
     if (!apiKey) {
@@ -132,33 +157,34 @@ export function useVoiceToText({ apiKey, onTranscription, onAudioLevel }: UseVoi
         if (!granted) return;
       }
 
-      // Connect to Deepgram and wait for connection to be ready
-      if (deepgramRef.current) {
+      // Connect to Deepgram if not already connected
+      if (deepgramRef.current && !isConnectedRef.current) {
         await deepgramRef.current.connect(
           handleTranscription,
           handleStatusChange,
           handleError
         );
-
-        // Start audio capture only after connection is established
-        await audioCaptureService.startCapture(
-          (audioData) => {
-            deepgramRef.current?.sendAudio(audioData);
-          },
-          onAudioLevel
-        );
-
-        setIsRecording(true);
+        isConnectedRef.current = true;
       }
+
+      // Start audio capture immediately
+      await audioCaptureService.startCapture(
+        (audioData) => {
+          deepgramRef.current?.sendAudio(audioData);
+        },
+        onAudioLevel
+      );
+
+      setIsRecording(true);
     } catch (err) {
       handleError(err instanceof Error ? err : new Error('Failed to start recording'));
     }
   }, [apiKey, isRecording, hasPermission, requestPermission, handleTranscription, handleStatusChange, handleError, onAudioLevel]);
 
-  // Stop recording
+  // Stop recording - keep connection alive for instant next start
   const stopRecording = useCallback(() => {
     audioCaptureService.stopCapture();
-    deepgramRef.current?.disconnect();
+    // Don't disconnect - keep connection alive for zero-lag next start
     setIsRecording(false);
     setCurrentTranscript('');
   }, []);

@@ -3,7 +3,7 @@
  * A Wispr Flow clone using Tauri + Deepgram
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { writeText } from '@tauri-apps/plugin-clipboard-manager';
 import { useVoiceToText } from './hooks/useVoiceToText';
 import {
@@ -23,8 +23,6 @@ function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [audioLevel, setAudioLevel] = useState(0);
-  const audioLevelRef = useRef(0);
-  const rafRef = useRef<number | null>(null);
 
   // Load API key from localStorage on mount
   useEffect(() => {
@@ -36,16 +34,9 @@ function App() {
     }
   }, []);
 
-  // Optimized audio level callback - throttled updates
+  // Direct audio level callback - no throttling for instant waveform
   const handleAudioLevel = useCallback((level: number) => {
-    audioLevelRef.current = audioLevelRef.current * 0.5 + level * 0.5;
-    // Throttle state updates using RAF
-    if (rafRef.current === null) {
-      rafRef.current = requestAnimationFrame(() => {
-        setAudioLevel(audioLevelRef.current);
-        rafRef.current = null;
-      });
-    }
+    setAudioLevel(level);
   }, []);
 
   // Initialize voice-to-text hook

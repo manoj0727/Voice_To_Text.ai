@@ -75,8 +75,8 @@ export class AudioCaptureService {
       if (this.onAudioLevelCallback) {
         const source = this.audioContext.createMediaStreamSource(this.mediaStream);
         this.analyser = this.audioContext.createAnalyser();
-        this.analyser.fftSize = 128; // Smaller FFT for faster processing
-        this.analyser.smoothingTimeConstant = 0.3; // Less smoothing = faster response
+        this.analyser.fftSize = 256;
+        this.analyser.smoothingTimeConstant = 0.1; // Very fast response
         source.connect(this.analyser);
         this.startLevelMonitoring();
       }
@@ -96,8 +96,8 @@ export class AudioCaptureService {
         }
       };
 
-      // Start recording with very small time slices for instant streaming
-      this.mediaRecorder.start(50); // 50ms chunks for near-instant response
+      // Start recording with minimum time slices for instant streaming
+      this.mediaRecorder.start(20); // 20ms chunks for zero-lag response
     } catch (error) {
       this.cleanup();
       throw this.handleError(error);
@@ -115,15 +115,17 @@ export class AudioCaptureService {
     const checkLevel = () => {
       if (!this.analyser || !this.onAudioLevelCallback) return;
 
-      this.analyser.getByteFrequencyData(dataArray);
+      this.analyser.getByteTimeDomainData(dataArray);
 
-      // Calculate average level
+      // Calculate RMS (root mean square) for better voice detection
       let sum = 0;
       for (let i = 0; i < dataArray.length; i++) {
-        sum += dataArray[i];
+        const value = (dataArray[i] - 128) / 128; // Normalize to -1 to 1
+        sum += value * value;
       }
-      const average = sum / dataArray.length;
-      const normalizedLevel = Math.min(average / 128, 1); // Normalize to 0-1
+      const rms = Math.sqrt(sum / dataArray.length);
+      // Amplify and clamp the level for better visual feedback
+      const normalizedLevel = Math.min(rms * 3, 1);
 
       this.onAudioLevelCallback(normalizedLevel);
 

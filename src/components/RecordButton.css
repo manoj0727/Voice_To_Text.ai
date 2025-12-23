@@ -97,18 +97,17 @@
   display: flex;
   align-items: flex-end;
   justify-content: center;
-  gap: 3px;
-  height: 36px;
-  margin-top: 12px;
+  gap: 2px;
+  height: 50px;
+  margin-top: 10px;
 }
 
 .waveform-bar {
   width: 4px;
-  min-height: 3px;
-  background: #4ade80;
+  min-height: 4px;
+  background: linear-gradient(to top, #22c55e, #4ade80);
   border-radius: 2px;
-  transition: height 0.08s ease-out;
-  box-shadow: 0 0 6px rgba(74, 222, 128, 0.5);
+  box-shadow: 0 0 8px rgba(74, 222, 128, 0.6);
 }
 
 .pulse-ring {

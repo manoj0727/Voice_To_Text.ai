@@ -63,11 +63,12 @@ export class DeepgramService {
         this.connection = deepgram.listen.live({
           model: 'nova-2',
           language: this.config.language || 'en',
-          punctuate: true,
+          punctuate: false,
           interim_results: true,
-          smart_format: true,
-          endpointing: 25,
+          smart_format: false,
+          endpointing: 10,
           vad_events: true,
+          no_delay: true,
         });
 
         // Wait for connection to be established before resolving

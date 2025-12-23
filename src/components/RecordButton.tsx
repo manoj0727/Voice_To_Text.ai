@@ -89,7 +89,7 @@ export const RecordButton: React.FC<RecordButtonProps> = ({
                 key={index}
                 className="waveform-bar"
                 style={{
-                  height: `${Math.max(3, level * 32)}px`,
+                  height: `${Math.max(4, level * 50)}px`,
                 }}
               />
             ))}
