@@ -1,0 +1,61 @@
+/* StatusBar Styles */
+
+.status-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+}
+
+.status-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transition: background-color 0.3s ease;
+}
+
+.status-indicator.connected .status-dot {
+  background: #48bb78;
+  box-shadow: 0 0 8px rgba(72, 187, 120, 0.5);
+}
+
+.status-indicator.connecting .status-dot {
+  background: #ecc94b;
+  animation: blink 1s ease-in-out infinite;
+}
+
+.status-indicator.error .status-dot {
+  background: #f56565;
+  box-shadow: 0 0 8px rgba(245, 101, 101, 0.5);
+}
+
+.status-indicator.disconnected .status-dot {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+@keyframes blink {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.permission-warning {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #ecc94b;
+}
