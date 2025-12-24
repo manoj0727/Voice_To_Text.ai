@@ -245,15 +245,12 @@ this.connection = deepgram.listen.live({
 ## Scripts
 
 ```bash
-npm run dev          # Vite dev server only
-npm run build        # Build frontend
-npm run tauri dev    # Full app development mode
-npm run tauri build  # Production build
+npm run dev      
+npm run build       
+npm run tauri dev  
+npm run tauri build  
 ```
 
-## License
-
-MIT License
 
 ## Acknowledgments
 
