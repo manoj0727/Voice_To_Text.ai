@@ -203,17 +203,7 @@ this.connection = deepgram.listen.live({
 });
 ```
 
-### Enabling Punctuation
 
-For better formatted text (with slight latency increase):
-
-```typescript
-this.connection = deepgram.listen.live({
-  punctuate: true,
-  smart_format: true,
-  // ...
-});
-```
 
 ## Usage
 
